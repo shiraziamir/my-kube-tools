@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# MySQL connection credentials
+USER="your_username"
+PASSWORD="your_password"
+HOST="your_host"
+DATABASE="information_schema"
+
+# Temporary files to store output
+TEMP_FILE1="/tmp/db_size_1.tmp"
+TEMP_FILE2="/tmp/db_size_2.tmp"
+
+# Function to query database sizes
+query_db_sizes() {
+    mysql -u "$USER" -p"$PASSWORD" -h "$HOST" -D "$DATABASE" -e "SELECT table_schema AS 'Database', SUM(data_length + index_length) / 1024 / 1024 AS 'Size in MB' FROM TABLES GROUP BY table_schema;" > "$1"
+}
+
+# Initial query
+query_db_sizes $TEMP_FILE1
+
+while true; do
+    sleep 60  # Wait for 60 seconds; adjust this interval based on your needs
+    
+    # Query sizes again
+    query_db_sizes $TEMP_FILE2
+    
+    # Compare outputs and print differences
+    echo "Comparing database sizes..."
+    diff $TEMP_FILE1 $TEMP_FILE2
+    
+    # Move TEMP_FILE2 to TEMP_FILE1 for next iteration comparison
+    mv $TEMP_FILE2 $TEMP_FILE1
+done
